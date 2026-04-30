@@ -117,7 +117,7 @@ wheels = [
 [[package]]
 name = "classification-rule-mining"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "ag2", extra = ["openai"] },
 ]

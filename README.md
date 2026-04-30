@@ -46,3 +46,8 @@ uv sync
 ```Bash
 uv run python -m src.main
 ```
+
+4. Or run example demo
+```Bash
+uv run demo
+```
