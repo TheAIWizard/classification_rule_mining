@@ -29,3 +29,20 @@ vs
 Model Behavior (confidence)
 
 → Decision: ADD / UPDATE / REVIEW
+
+1. Install uv
+```Bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+2. Clone & Sync
+```Bash
+git clone git@github.com:InseeFrLab/codif-ape-preprocess.git
+cd classification_rule_mining
+uv sync
+```
+
+3. Run
+```Bash
+uv run python -m src.main
+```

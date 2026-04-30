@@ -1,0 +1,9 @@
+[project]
+name = "classification-rule-mining"
+version = "0.1.0"
+description = "Business rule mining from raw feedbacks with MAS"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "ag2[openai]>=0.12.1",
+]
