@@ -13,8 +13,9 @@ def run_date():
         recipient=date_agent,
         message="I was born on the 25th of March 1995, what day was it?",
         max_turns=2,
+        summary_method="last_msg"  # "reflection_with_llm" => resume history with llm
     )
-    day_birthday = day_birthday_res.chat_history[-1]["content"].strip()
+    day_birthday = day_birthday_res.summary.strip()
     return {
         "day_birthday": day_birthday,
     }

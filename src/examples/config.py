@@ -17,7 +17,4 @@ AGENT_MODEL_MAP = {
     "executor_agent": None,
     "date_agent":       LLM_GEMMA4_26B,
     "weather_agent":       LLM_GEMMA4_26B,
-    "agent_analyse_naf":   LLM_GEMMA4_26B,
-    "agent_auditeur_naf":   LLM_QWEN3_35B,
-    "agent_juge_naf":       LLM_QWEN3_35B,
 }
