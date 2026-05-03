@@ -5,6 +5,7 @@ BASE_LLM_CONFIG = {
     "api_type": "openai",
     "base_url": os.getenv("LLM_LAB_BASE_URL"),
     "api_key": os.getenv("LLM_LAB_API_KEY"),
+    "price": [0.00008, 0.00028]
 }
 
 # 🔹 Dérivations explicites (hérite + override du modèle uniquement)

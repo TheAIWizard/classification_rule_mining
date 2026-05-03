@@ -19,7 +19,7 @@ def run_date_weather_workflow(date_str: str = "25th of March 1995", location: st
         recipient=date_agent,
         message=f"I was born on the {date_str} in {location}, what day was it ? "
                 f"I wonder if it's as hot as here there now.",
-        max_turns=2,
+        max_turns=3,
     )
     # ⚠️ correction : chat_history[0] était ton message initial, on prend la dernière réponse
     weekday = date_res.chat_history[-1]["content"].strip()

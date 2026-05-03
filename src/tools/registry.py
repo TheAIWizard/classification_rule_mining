@@ -1,6 +1,5 @@
-from .tools import get_weekday, get_weather
+from .tools import lookup_codes
 
 TOOL_REGISTRY = {
-    "get_weekday": get_weekday,
-    "get_weather": get_weather,
+    "lookup_codes": lookup_codes
 }

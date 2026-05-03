@@ -1,6 +1,6 @@
 from ..agents import create_agent
 from ..utils.llm_utils import extract_json
-# from ..tools.tool_loader import load_and_register_tools
+from ..tools.tool_loader import load_and_register_tools
 
 
 def run_extract_rules(libellé="Je suis créateur de contenu, vidéaste."
@@ -18,8 +18,8 @@ def run_extract_rules(libellé="Je suis créateur de contenu, vidéaste."
     executor = create_agent("executor_agent", human_input_mode="NEVER")
 
     # 2️⃣ Registration par scope
-    # load_and_register_tools(["get_naf_notes"], date_agent, executor)
-    # load_and_register_tools(["get_weather"], weather_agent, executor)
+    load_and_register_tools(["lookup_codes"], agent_analyse_naf, executor)
+    load_and_register_tools(["lookup_codes"], agent_auditeur_naf, executor)
 
     # 2️⃣ Analyse
     res_analyse = executor.initiate_chat(
@@ -31,10 +31,12 @@ Codes soumis : [{code_proposé}, {code_observé}]
 ────────────────────
 Rends-toi strictement dans le format demandé dans ton prompt système.
 """,
-        max_turns=1,
+        max_turns=2,
         summary_method="last_msg"  # "reflection_with_llm" => resume history with llm
     )
+    print(res_analyse.chat_history)
     res_analyse = res_analyse.summary.strip()
+    print(res_analyse)
 
     # 3️⃣ Audit
     res_audit = executor.initiate_chat(
@@ -46,7 +48,7 @@ Texte à objectiver :
 ────────────────────
 Rends-toi dans le format de ton prompt système.
 """,
-        max_turns=1,
+        max_turns=2,
         summary_method="last_msg"  # "reflection_with_llm" => resume history with llm
     )
     res_audit = res_audit.summary.strip()
@@ -61,6 +63,7 @@ Rends-toi dans le format de ton prompt système.
         summary_method="last_msg"  # "reflection_with_llm" => resume history with llm
     )
     res_juge = res_juge.summary.strip()
+    print(res_juge)
     res_juge_json = extract_json(res_juge)
 
     return res_juge_json
