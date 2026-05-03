@@ -15,7 +15,7 @@ LLM_QWEN3_6_35B = {**BASE_LLM_CONFIG, "model": "qwen3-6-35b-moe"}
 # 🔹 Mapping déclaratif : agent → config LLM
 AGENT_MODEL_MAP = {
     "executor_agent": None,
-    "date_agent":       LLM_GEMMA4_26B,
-    "weather_agent":       LLM_GEMMA4_26B,
-    "doc_agent":       LLM_QWEN3_6_35B,
+    "agent_analyse_naf":       LLM_GEMMA4_26B,
+    "agent_auditeur_naf":       LLM_QWEN3_6_35B,
+    "agent_juge_naf":       LLM_QWEN3_6_35B,
 }
