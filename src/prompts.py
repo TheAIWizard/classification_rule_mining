@@ -1,6 +1,4 @@
-from langfuse import get_client
-
-langfuse = get_client()
+from .utils.io import langfuse
 
 prompt_analyste = langfuse.get_prompt("agent_analyse_naf", label="latest").prompt
 prompt_auditeur = langfuse.get_prompt("agent_auditeur_naf", label="latest").prompt

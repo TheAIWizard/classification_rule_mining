@@ -1,5 +1,8 @@
 import os
 from qdrant_client import QdrantClient
+from langfuse import get_client
+
+langfuse = get_client()
 
 
 def get_qdrant_client() -> QdrantClient:
