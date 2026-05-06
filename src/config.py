@@ -19,4 +19,11 @@ AGENT_MODEL_MAP = {
     "agent_analyse_naf":       LLM_GEMMA4_26B,
     "agent_auditeur_naf":       LLM_GEMMA4_26B,
     "agent_juge_naf":       LLM_GEMMA4_26B,
+    "agent_expertise_batch":       LLM_GEMMA4_26B,
+    "agent_clusterer_batch":       LLM_GEMMA4_26B,
+}
+
+PATH = {
+    "INPUT": "./inputs/feedback_data.csv",
+    "OUTPUT": "./outputs",
 }

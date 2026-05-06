@@ -1,6 +1,8 @@
 from ..agents import create_agent
-from ..utils.io import langfuse
+from ..config import PATH
+from ..utils.io import langfuse, load_data_to_dict, save_results
 from ..utils.agent_utils import extract_json
+from ..utils.data_utils import chunk_list
 from ..utils.tracing import trace_langfuse
 from ..tools.tool_loader import load_and_register_tools
 
@@ -90,3 +92,28 @@ Rends-toi dans le format de ton prompt système.
     langfuse.flush()
 
     return res_juge_json
+
+
+def run_extract_rules_batch(chunck_size=200) -> dict:
+    """Pipeline séquentiel : feedback → agents → rules."""
+
+    # 1️⃣ Setup
+
+    agent_expertise_batch = create_agent("agent_expertise_batch", human_input_mode="NEVER")
+
+    executor = create_agent("executor_agent", human_input_mode="NEVER")
+
+    feedback_data = load_data_to_dict(PATH["INPUT"])
+    feedback_data_list = chunk_list(feedback_data, chunk_size=chunck_size)
+
+    res_expertise_json_list = []
+
+    for chunck_data in feedback_data_list:
+        res_expertise = run_agent_step(agent=agent_expertise_batch,
+                                       executor=executor,
+                                       user_prompt=str(chunck_data),
+                                       span_name="agent_expertise_batch")
+        res_expertise_text = res_expertise.summary.strip()
+        res_expertise_json = extract_json(res_expertise_text)
+        res_expertise_json_list.append(res_expertise_json)
+        save_results(res_expertise_json, PATH["OUTPUT"])

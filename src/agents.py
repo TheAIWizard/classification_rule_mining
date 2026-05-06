@@ -19,7 +19,7 @@ def create_agent(
         system_message: Override du prompt système (si None, utilise prompts.py)
         **kwargs: Arguments supplémentaires passés à ConversableAgent 
                   (ex: is_termination_msg, max_concurrent_workers, etc.)
-                 
+               
     Returns:
         ConversableAgent prêt à l'emploi
     """
