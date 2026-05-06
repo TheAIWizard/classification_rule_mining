@@ -17,6 +17,6 @@ LLM_QWEN3_6_35B = {**BASE_LLM_CONFIG, "model": "qwen3-6-35b-moe"}
 AGENT_MODEL_MAP = {
     "executor_agent": None,
     "agent_analyse_naf":       LLM_GEMMA4_26B,
-    "agent_auditeur_naf":       LLM_QWEN3_6_35B,
-    "agent_juge_naf":       LLM_QWEN3_6_35B,
+    "agent_auditeur_naf":       LLM_GEMMA4_26B,
+    "agent_juge_naf":       LLM_GEMMA4_26B,
 }

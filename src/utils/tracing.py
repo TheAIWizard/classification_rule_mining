@@ -58,40 +58,40 @@ def trace_langfuse(func):
                 # 1. Exécution du code métier
                 result = func(*args, **kwargs)
 
-                # 2. Post-traitement si le résultat contient un historique conversationnel
-                if hasattr(result, 'chat_history'):
-                    metrics = compute_agent_metrics(result.chat_history)
-                    tool_events = extract_tool_events(result.chat_history)
+                # 2. Post-traitement
 
-                    # 3. Création des spans imbriquées pour chaque outil utilisé
-                    for evt in tool_events:
-                        with langfuse.start_as_current_observation(
-                            as_type="span",
-                            name=f"tool_{evt['tool_name']}"
-                        ) as tool_span:
-                            output_preview = evt.get("output", "")[:8000]
-                            tool_span.update(
-                                input=evt.get("input"),
-                                output=output_preview
-                            )
+                metrics = compute_agent_metrics(result.chat_history)
+                tool_events = extract_tool_events(result.chat_history)
 
-                    # 4. Mise à jour de la span parent avec les résultats et metadata dynamiques
-                    span.update(
-                        output=str(result.summary)[:5000],
-                        metadata={
-                            "LLM_config": llm_meta,
-                            "max_turns": max_turns_config,
-                            "summary_method": summary_method_config,
-                            "actual_turns": metrics["agent_iterations"],
-                            "tool_calls_count": metrics["tool_calls_count"],
-                            "conversation_rounds": metrics["conversation_rounds"]
-                        }
-                    )
-   
+                # 3. Création des spans imbriquées pour chaque outil utilisé
+                for evt in tool_events:
+                    with langfuse.start_as_current_observation(
+                        as_type="span",
+                        name=f"tool_{evt['tool_name']}"
+                    ) as tool_span:
+                        output_preview = evt.get("output", "")[:8000]
+                        tool_span.update(
+                            input=evt.get("input"),
+                            output=output_preview
+                        )
+
+                # 4. Mise à jour de la span parent avec les résultats et metadata dynamiques
+                span.update(
+                    output=str(result.summary)[:5000],
+                    metadata={
+                        "LLM_config": llm_meta,
+                        "max_turns": max_turns_config,
+                        "summary_method": summary_method_config,
+                        "actual_turns": metrics["agent_iterations"],
+                        "tool_calls_count": metrics["tool_calls_count"],
+                        "conversation_rounds": metrics["conversation_rounds"]
+                    }
+                )
+
                 return result
             except Exception as e:
                 # Enregistrement de l'erreur dans la trace pour faciliter le débogage
                 span.update(status="Error", output=str(e))
                 raise
-        
+      
     return wrapper

@@ -22,11 +22,9 @@ def run_agent_step(agent,
     )
 
 
-def run_extract_rules(libellé="Je suis créateur de contenu, vidéaste. "
-                              "Je fais parfois des vidéos youtube et fais de la publicité "
-                              "pour des marques qui me proposent des partenariats",
-                      code_proposé="5911G",
-                      code_observé="5911H") -> dict:
+def run_extract_rules(libellé="coiffeur ambulant",
+                      code_proposé="9621H",
+                      code_observé="9621G") -> dict:
     """Pipeline séquentiel : feedback → agents → rules."""
 
     # 1️⃣ Setup
@@ -76,8 +74,8 @@ Rends-toi dans le format de ton prompt système.
 
     user_prompt_juge = (
         f"📥 CONTEXTE D'ENTRÉE\n"
-        f"<analyse_sous>\n{res_analyse_text}\n</analyse_sous>\n\n"
-        f"<audit_sous>\n{res_audit_text}\n</audit_sous>\n\n"
+        f"<analyse_experte>\n{res_analyse_text}\n</analyse_experte>\n\n"
+        f"<rapport_audit>\n{res_audit_text}\n</rapport_audit>\n\n"
     )
 
     res_juge = run_agent_step(agent=agent_juge_naf,
