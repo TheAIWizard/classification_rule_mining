@@ -21,6 +21,9 @@ AGENT_MODEL_MAP = {
     "agent_juge_naf":       LLM_GEMMA4_26B,
     "agent_expertise_batch":       LLM_GEMMA4_26B,
     "agent_clusterer_batch":       LLM_GEMMA4_26B,
+    "agent_clusters_merger":       LLM_GEMMA4_26B,
+    "agent_rules_impact_check":       LLM_GEMMA4_26B,
+    "agent_rules_renderer_md":       LLM_GEMMA4_26B,
 }
 
 PATH = {

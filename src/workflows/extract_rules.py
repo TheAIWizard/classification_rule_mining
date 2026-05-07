@@ -1,7 +1,8 @@
+import json
 from ..agents import create_agent
 from ..config import PATH
-from ..utils.io import langfuse, load_data_to_dict, save_results
-from ..utils.agent_utils import extract_json
+from ..utils.io import langfuse, load_data_to_dict, save_results, save_md, save_json
+from ..utils.agent_utils import extract_json, extract_json_list
 from ..utils.data_utils import chunk_list
 from ..utils.tracing import trace_langfuse
 from ..tools.tool_loader import load_and_register_tools
@@ -94,12 +95,16 @@ Rends-toi dans le format de ton prompt système.
     return res_juge_json
 
 
-def run_extract_rules_batch(chunck_size=200) -> dict:
+def run_extract_rules_batch(chunck_size=50) -> dict:
     """Pipeline séquentiel : feedback → agents → rules."""
 
     # 1️⃣ Setup
 
     agent_expertise_batch = create_agent("agent_expertise_batch", human_input_mode="NEVER")
+    agent_clusterer_batch = create_agent("agent_clusterer_batch", human_input_mode="NEVER")
+    agent_clusters_merger = create_agent("agent_clusters_merger", human_input_mode="NEVER")
+    agent_rules_impact_check = create_agent("agent_rules_impact_check", human_input_mode="NEVER")
+    agent_rules_renderer_md = create_agent("agent_rules_renderer_md", human_input_mode="NEVER")
 
     executor = create_agent("executor_agent", human_input_mode="NEVER")
 
@@ -111,9 +116,48 @@ def run_extract_rules_batch(chunck_size=200) -> dict:
     for chunck_data in feedback_data_list:
         res_expertise = run_agent_step(agent=agent_expertise_batch,
                                        executor=executor,
-                                       user_prompt=str(chunck_data),
+                                       user_prompt=json.dumps(chunck_data, ensure_ascii=False),
                                        span_name="agent_expertise_batch")
         res_expertise_text = res_expertise.summary.strip()
-        res_expertise_json = extract_json(res_expertise_text)
-        res_expertise_json_list.append(res_expertise_json)
-        save_results(res_expertise_json, PATH["OUTPUT"])
+        res_expertise_json = extract_json_list(res_expertise_text)
+        res_expertise_json_list += res_expertise_json
+    save_json(res_expertise_json, PATH["OUTPUT"])
+    save_results(res_expertise_json_list, PATH["OUTPUT"])
+
+    res_clusters_json_list = []
+
+    chuncked_res_expertise_json_list = chunk_list(res_expertise_json_list, chunk_size=chunck_size)
+    for chunck_data in chuncked_res_expertise_json_list:
+        res_clusters = run_agent_step(agent=agent_clusterer_batch,
+                                      executor=executor,
+                                      user_prompt=json.dumps(chunck_data, ensure_ascii=False),
+                                      span_name="agent_clusterer_batch")
+        res_clusters_text = res_clusters.summary.strip()
+        res_clusters_json = extract_json_list(res_clusters_text)
+        res_clusters_json_list += res_clusters_json
+    save_json(res_clusters_json, PATH["OUTPUT"])
+    save_results(res_clusters_json_list, PATH["OUTPUT"])
+
+    res_clusters_merger = run_agent_step(agent=agent_clusters_merger,
+                                         executor=executor,
+                                         user_prompt=str(res_clusters_json_list),
+                                         span_name="agent_clusters_merger")
+    res_clusters_merger_text = res_clusters_merger.summary.strip()
+    res_clusters_merger_json = extract_json_list(res_clusters_merger_text)
+    save_json(res_clusters_merger_json, PATH["OUTPUT"])
+    save_results(res_clusters_merger, PATH["OUTPUT"])
+
+    res_rules_impact_check = run_agent_step(agent=agent_rules_impact_check,
+                                            executor=executor,
+                                            user_prompt=res_clusters_merger_text,
+                                            span_name="agent_rules_impact_check")
+    res_rules_impact_check_text = res_rules_impact_check.summary.strip()
+
+    save_results(res_rules_impact_check_text, PATH["OUTPUT"])
+
+    res_rules_renderer_md = run_agent_step(agent=agent_rules_renderer_md,
+                                           executor=executor,
+                                           user_prompt=res_rules_impact_check_text,
+                                           span_name="agent_rules_renderer_md")
+    res_rules_renderer_md_text = res_rules_renderer_md.summary.strip()
+    save_md(res_rules_renderer_md_text, PATH["OUTPUT"])

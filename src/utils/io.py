@@ -1,9 +1,11 @@
 import os
+import json
 import pandas as pd
 import s3fs
 import duckdb
+from pathlib import Path
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Any
 from qdrant_client import QdrantClient
 from langfuse import get_client
 
@@ -154,3 +156,34 @@ def save_results(data: List[Dict], filename: str, output_dir: str = "outputs") -
     except Exception as e:
         print(f"❌ Erreur lors de la sauvegarde : {str(e)}")
         raise
+
+
+def save_md(content: str, file_path: str) -> None:
+    """
+    Enregistre un contenu string dans un fichier .md.
+    ✅ Crée automatiquement les répertoires manquants
+    ✅ Ajoute l'extension .md si absente
+    ✅ Utilise l'encodage UTF-8 (standard Markdown)
+    """
+    path = Path(file_path)
+    if not path.suffix:
+        path = path.with_suffix(".md")
+   
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
+def save_json(data: Any, file_path: str) -> None:
+    """
+    Sauvegarde n'importe quel objet sérialisable en JSON.
+    ✅ Fonctionne avec list, dict, str, int, bool, None...
+    """
+    path = Path(file_path)
+    if not path.suffix:
+        path = path.with_suffix(".json")
+    
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(data, indent=2, ensure_ascii=False),
+        encoding="utf-8"
+    )

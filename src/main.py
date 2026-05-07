@@ -8,5 +8,6 @@ def main():
     #     print(f"  {k}: {v}")
     print(rules)
 
+
 if __name__ == "__main__":
     main()

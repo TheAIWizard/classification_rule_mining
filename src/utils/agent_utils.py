@@ -25,6 +25,132 @@ def extract_json(text: str) -> dict[str, Any]:
         raise ValueError(f"❌ JSON parse échoué: {e}\n>>> {text[:200]}")
 
 
+def extract_json_list(text: str) -> List[Dict[str, Any]]:
+    """
+    Extrait une liste JSON depuis une sortie LLM robuste.
+
+    Gère :
+    - texte avant/après
+    - markdown ```json
+    - objet unique ou liste
+    - plusieurs blocs JSON
+    - espaces parasites
+
+    Retour :
+    - list[dict]
+    """
+
+    if not text or not text.strip():
+        return []
+
+    # ---------------------------------------------------------
+    # 1. Nettoyage markdown
+    # ---------------------------------------------------------
+
+    clean = text.strip()
+
+    clean = re.sub(
+        r"```(?:json)?",
+        "",
+        clean,
+        flags=re.IGNORECASE
+    )
+
+    clean = clean.replace("```", "").strip()
+
+    # ---------------------------------------------------------
+    # 2. Parsing direct
+    # ---------------------------------------------------------
+
+    try:
+        data = json.loads(clean)
+
+        if isinstance(data, list):
+            return data
+
+        if isinstance(data, dict):
+            return [data]
+
+    except Exception:
+        pass
+
+    # ---------------------------------------------------------
+    # 3. Recherche d'une liste JSON
+    # ---------------------------------------------------------
+
+    start = clean.find("[")
+    end = clean.rfind("]")
+
+    if start != -1 and end != -1 and end > start:
+
+        candidate = clean[start:end + 1]
+
+        try:
+            data = json.loads(candidate)
+
+            if isinstance(data, list):
+                return data
+
+        except Exception:
+            pass
+
+    # ---------------------------------------------------------
+    # 4. Recherche d'un objet JSON
+    # ---------------------------------------------------------
+
+    start = clean.find("{")
+    end = clean.rfind("}")
+
+    if start != -1 and end != -1 and end > start:
+
+        candidate = clean[start:end + 1]
+
+        try:
+            data = json.loads(candidate)
+
+            if isinstance(data, dict):
+                return [data]
+
+        except Exception:
+            pass
+
+    # ---------------------------------------------------------
+    # 5. Tentative avancée :
+    #    extraction de plusieurs objets JSON concaténés
+    # ---------------------------------------------------------
+
+    objects = re.findall(
+        r"\{(?:[^{}]|(?:\{[^{}]*\}))*\}",
+        clean,
+        flags=re.DOTALL
+    )
+
+    parsed = []
+
+    for obj in objects:
+
+        try:
+            data = json.loads(obj)
+
+            if isinstance(data, dict):
+                parsed.append(data)
+
+        except Exception:
+            continue
+
+    if parsed:
+        return parsed
+
+    # ---------------------------------------------------------
+    # 6. Échec final
+    # ---------------------------------------------------------
+
+    print("❌ Impossible d'extraire du JSON")
+    print(clean[:1000])
+
+    return []
+
+
 def extract_tool_events(chat_history: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Parse la structure native AG2 pour associer appels d'outils et réponses.
