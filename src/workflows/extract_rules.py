@@ -1,7 +1,7 @@
 import json
 from ..agents import create_agent
 from ..config import PATH
-from ..utils.io import langfuse, load_data_to_dict, save_results, save_md, save_json
+from ..utils.io import langfuse, load_data_to_dict, save_results, save_md, save_json, load_json
 from ..utils.agent_utils import extract_json, extract_json_list
 from ..utils.data_utils import chunk_list
 from ..utils.tracing import trace_langfuse
@@ -108,6 +108,9 @@ def run_extract_rules_batch(chunck_size=50) -> dict:
 
     executor = create_agent("executor_agent", human_input_mode="NEVER")
 
+    load_and_register_tools(["lookup_codes"], agent_expertise_batch, executor)
+    load_and_register_tools(["analyze_impact_cluster"], agent_rules_impact_check, executor)
+
     feedback_data = load_data_to_dict(PATH["INPUT"])
     feedback_data_list = chunk_list(feedback_data, chunk_size=chunck_size)
 
@@ -116,7 +119,8 @@ def run_extract_rules_batch(chunck_size=50) -> dict:
     for chunk in feedback_data_list:
         res_expertise = run_agent_step(agent=agent_expertise_batch,
                                        executor=executor,
-                                       user_prompt=f"DONNÉES À TRAITER :\n{json.dumps(chunk, ensure_ascii=False, indent=2)}\n",
+                                       user_prompt=f"DONNÉES À TRAITER :"
+                                                   f"\n{json.dumps(chunk, ensure_ascii=False, indent=2)}\n",
                                        span_name="agent_expertise_batch")
         res_expertise_text = res_expertise.summary.strip()
         res_expertise_json = extract_json_list(res_expertise_text)
@@ -130,7 +134,8 @@ def run_extract_rules_batch(chunck_size=50) -> dict:
     for chunk in chuncked_res_expertise_json_list:
         res_clusters = run_agent_step(agent=agent_clusterer_batch,
                                       executor=executor,
-                                      user_prompt=f"DONNÉES À TRAITER :\n{json.dumps(chunk, ensure_ascii=False, indent=2)}\n",
+                                      user_prompt=f"DONNÉES À TRAITER :"
+                                                  f"\n{json.dumps(chunk, ensure_ascii=False, indent=2)}\n",
                                       span_name="agent_clusterer_batch")
         res_clusters_text = res_clusters.summary.strip()
         res_clusters_json = extract_json_list(res_clusters_text)
@@ -140,24 +145,30 @@ def run_extract_rules_batch(chunck_size=50) -> dict:
 
     res_clusters_merger = run_agent_step(agent=agent_clusters_merger,
                                          executor=executor,
-                                         user_prompt=str(res_clusters_json_list),
+                                         user_prompt=f"DONNÉES À TRAITER :"
+                                                     f"\n{json.dumps(res_clusters_json_list)}\n",
                                          span_name="agent_clusters_merger")
     res_clusters_merger_text = res_clusters_merger.summary.strip()
     res_clusters_merger_json = extract_json_list(res_clusters_merger_text)
     save_json(res_clusters_merger_json, f"{PATH['OUTPUT']}/clusters_merge")
-    save_results(res_clusters_merger, PATH["OUTPUT"])
+    # save_results(res_clusters_merger, PATH["OUTPUT"])
 
+    # res_clusters_merge_text = load_json('/home/onyxia/work/classification_rule_mining/outputs/clusters_merge_20260508_174043_sans_notes.json')
+    s3_path = 's3://projet-ape/data/08112022_27102024/naf2025/raw_cleansed.parquet'
     res_rules_impact_check = run_agent_step(agent=agent_rules_impact_check,
                                             executor=executor,
-                                            user_prompt=res_clusters_merger_text,
+                                            user_prompt=f"DONNÉES À TRAITER :"
+                                                        f"\n{json.dumps(res_clusters_merge_text)}\n"
+                                                        f"s3_path={s3_path}, column=libelle_cleaned",
                                             span_name="agent_rules_impact_check")
     res_rules_impact_check_text = res_rules_impact_check.summary.strip()
-
-    save_results(res_rules_impact_check_text, PATH["OUTPUT"])
+    res_rules_impact_check_json = extract_json_list(res_rules_impact_check_text)
+    save_json(res_rules_impact_check_json, f"{PATH['OUTPUT']}/rules_impact")
 
     res_rules_renderer_md = run_agent_step(agent=agent_rules_renderer_md,
                                            executor=executor,
-                                           user_prompt=res_rules_impact_check_text,
+                                           user_prompt=f"DONNÉES À TRAITER :"
+                                                       f"\n{json.dumps(res_rules_impact_check_text)}\n",
                                            span_name="agent_rules_renderer_md")
     res_rules_renderer_md_text = res_rules_renderer_md.summary.strip()
     save_md(res_rules_renderer_md_text, PATH["OUTPUT"])

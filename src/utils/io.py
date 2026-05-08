@@ -5,7 +5,7 @@ import s3fs
 import duckdb
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 from qdrant_client import QdrantClient
 from langfuse import get_client
 
@@ -44,26 +44,25 @@ def get_filesystem() -> s3fs.S3FileSystem:
 
 
 def get_duckdb_connection():
+    """Connexion DuckDB optimisée pour MinIO / SSPCloud."""
+
+    con = duckdb.connect(database=":memory:")
+    con.execute(
+        f"""
+    CREATE SECRET secret_ls3 (
+        TYPE S3,
+        KEY_ID '{os.environ["AWS_ACCESS_KEY_ID"]}',
+        SECRET '{os.environ["AWS_SECRET_ACCESS_KEY"]}',
+        ENDPOINT '{os.environ["AWS_S3_ENDPOINT"]}',
+        SESSION_TOKEN '',
+        REGION 'us-east-1',
+        URL_STYLE 'path',
+        SCOPE 's3://'
+    );
     """
-    Configure et retourne une connexion DuckDB prête pour S3.
-    Initialise l'extension httpfs indispensable pour lire sur S3.
-    """
-    con = duckdb.connect(database=':memory:')
-    con.execute("INSTALL httpfs; LOAD httpfs;")
-
-    # Configuration des credentials S3 dans DuckDB
-    endpoint = os.environ.get("AWS_S3_ENDPOINT")
-    access_key = os.environ.get("AWS_ACCESS_KEY_ID")
-    secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
-
-    if endpoint:
-        con.execute(f"SET s3_endpoint='{endpoint}';")
-        con.execute("SET s3_url_style='path';")  # Nécessaire pour MinIO
-
-    con.execute(f"SET s3_access_key_id='{access_key}';")
-    con.execute(f"SET s3_secret_access_key='{secret_key}';")
-
+    )
     return con
+
 
 
 # --- CHARGEMENT ET TRANSFORMATION ---
@@ -206,3 +205,70 @@ def save_json(data: Any, file_path: str, default_ext: str = ".json") -> str:
     except Exception as e:
         print(f"❌ Erreur lors de la sauvegarde : {e}")
         raise
+
+
+def load_json(file_path: Union[str, Path], default: Any = None) -> Any:
+    """
+    Lit et parse un fichier JSON.
+    ✅ Gère les chemins relatifs/absents
+    ✅ Retourne une valeur par défaut si fichier manquant ou vide
+    ✅ Erreurs explicites pour JSON corrompu
+    ✅ Encodage UTF-8 garanti
+    """
+    path = Path(file_path)
+
+    # Fichier inexistant → retourne default ou {}
+    if not path.exists():
+        return default if default is not None else {}
+
+    try:
+        # Lecture + nettoyage des espaces/retours à la ligne
+        content = path.read_text(encoding="utf-8").strip()
+        
+        # Fichier vide → retourne default ou {}
+        if not content:
+            return default if default is not None else {}
+            
+        return json.loads(content)
+        
+    except json.JSONDecodeError as e:
+        raise ValueError(f"⚠️ JSON invalide dans {path} : {e}")
+    except Exception as e:
+        raise RuntimeError(f"❌ Erreur de lecture de {path} : {e}")
+
+
+def load_json_list(file_path: Union[str, Path], default: list = None) -> list:
+    """
+    Lit et parse un fichier JSON contenant une liste de dictionnaires.
+    ✅ Retourne [] si fichier manquant ou vide
+    ✅ Wrap automatiquement un dict unique en liste [dict]
+    ✅ Erreurs explicites pour JSON corrompu ou type incompatible
+    ✅ Encodage UTF-8 garanti
+    """
+    if default is None:
+        default = []
+
+    path = Path(file_path)
+    if not path.exists():
+        return default
+
+    try:
+        content = path.read_text(encoding="utf-8").strip()
+        if not content:
+            return default
+
+        data = json.loads(content)
+
+        # 🔄 UX friendly : si un dict unique a été enregistré, on le transforme en liste
+        if isinstance(data, dict):
+            return [data]
+        
+        if not isinstance(data, list):
+            raise ValueError(f"⚠️ Attendait une liste, trouvé : {type(data).__name__}")
+            
+        return data
+
+    except json.JSONDecodeError as e:
+        raise ValueError(f"❌ JSON invalide dans {path} : {e}")
+    except Exception as e:
+        raise RuntimeError(f"❌ Erreur lecture {path} : {e}")
