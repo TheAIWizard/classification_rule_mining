@@ -173,17 +173,36 @@ def save_md(content: str, file_path: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def save_json(data: Any, file_path: str) -> None:
+def save_json(data: Any, file_path: str, default_ext: str = ".json") -> str:
     """
-    Sauvegarde n'importe quel objet sérialisable en JSON.
-    ✅ Fonctionne avec list, dict, str, int, bool, None...
+    Sauvegarde des données JSON avec :
+    ✅ Création automatique du dossier parent
+    ✅ Ajout d'un timestamp pour éviter les écrasements
+    ✅ Gestion automatique de l'extension (.json par défaut)
+    ✅ Encodage UTF-8 + indentation lisible
     """
-    path = Path(file_path)
-    if not path.suffix:
-        path = path.with_suffix(".json")
-    
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(data, indent=2, ensure_ascii=False),
-        encoding="utf-8"
-    )
+    try:
+        # 1. Normalisation de l'extension
+        path = Path(file_path)
+        if not path.suffix:
+            path = path.with_suffix(default_ext)
+
+        # 2. Insertion du timestamp avant l'extension
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = Path(f"{path.stem}_{timestamp}{path.suffix}")
+
+        # 3. Création du dossier si absent
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        # 4. Sérialisation & écriture
+        path.write_text(
+            json.dumps(data, indent=2, ensure_ascii=False),
+            encoding="utf-8"
+        )
+        
+        print(f"✅ Fichier sauvegardé : {path}")
+        return str(path)
+
+    except Exception as e:
+        print(f"❌ Erreur lors de la sauvegarde : {e}")
+        raise

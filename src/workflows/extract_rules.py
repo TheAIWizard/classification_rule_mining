@@ -113,29 +113,29 @@ def run_extract_rules_batch(chunck_size=50) -> dict:
 
     res_expertise_json_list = []
 
-    for chunck_data in feedback_data_list:
+    for chunk in feedback_data_list:
         res_expertise = run_agent_step(agent=agent_expertise_batch,
                                        executor=executor,
-                                       user_prompt=json.dumps(chunck_data, ensure_ascii=False),
+                                       user_prompt=f"DONNÉES À TRAITER :\n{json.dumps(chunk, ensure_ascii=False, indent=2)}\n",
                                        span_name="agent_expertise_batch")
         res_expertise_text = res_expertise.summary.strip()
         res_expertise_json = extract_json_list(res_expertise_text)
         res_expertise_json_list += res_expertise_json
-    save_json(res_expertise_json, PATH["OUTPUT"])
+    save_json(res_expertise_json, f"{PATH['OUTPUT']}/expertise")
     save_results(res_expertise_json_list, PATH["OUTPUT"])
 
     res_clusters_json_list = []
 
     chuncked_res_expertise_json_list = chunk_list(res_expertise_json_list, chunk_size=chunck_size)
-    for chunck_data in chuncked_res_expertise_json_list:
+    for chunk in chuncked_res_expertise_json_list:
         res_clusters = run_agent_step(agent=agent_clusterer_batch,
                                       executor=executor,
-                                      user_prompt=json.dumps(chunck_data, ensure_ascii=False),
+                                      user_prompt=f"DONNÉES À TRAITER :\n{json.dumps(chunk, ensure_ascii=False, indent=2)}\n",
                                       span_name="agent_clusterer_batch")
         res_clusters_text = res_clusters.summary.strip()
         res_clusters_json = extract_json_list(res_clusters_text)
         res_clusters_json_list += res_clusters_json
-    save_json(res_clusters_json, PATH["OUTPUT"])
+    save_json(res_clusters_json, f"{PATH['OUTPUT']}/clusters")
     save_results(res_clusters_json_list, PATH["OUTPUT"])
 
     res_clusters_merger = run_agent_step(agent=agent_clusters_merger,
@@ -144,7 +144,7 @@ def run_extract_rules_batch(chunck_size=50) -> dict:
                                          span_name="agent_clusters_merger")
     res_clusters_merger_text = res_clusters_merger.summary.strip()
     res_clusters_merger_json = extract_json_list(res_clusters_merger_text)
-    save_json(res_clusters_merger_json, PATH["OUTPUT"])
+    save_json(res_clusters_merger_json, f"{PATH['OUTPUT']}/clusters_merge")
     save_results(res_clusters_merger, PATH["OUTPUT"])
 
     res_rules_impact_check = run_agent_step(agent=agent_rules_impact_check,
