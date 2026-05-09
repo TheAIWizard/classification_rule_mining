@@ -158,7 +158,7 @@ def run_extract_rules_batch(chunck_size=50) -> dict:
     res_rules_impact_check = run_agent_step(agent=agent_rules_impact_check,
                                             executor=executor,
                                             user_prompt=f"DONNÉES À TRAITER :"
-                                                        f"\n{json.dumps(res_clusters_merge_text)}\n"
+                                                        f"\n{json.dumps(res_clusters_merger_text)}\n"
                                                         f"s3_path={s3_path}, column=libelle_cleaned",
                                             span_name="agent_rules_impact_check")
     res_rules_impact_check_text = res_rules_impact_check.summary.strip()
