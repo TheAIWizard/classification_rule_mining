@@ -25,9 +25,9 @@ def run_agent_step(agent,
     )
 
 
-def run_extract_rules(libellé="coiffeur ambulant",
-                      code_proposé="9621H",
-                      code_observé="9621G") -> dict:
+def run_extract_rules(libellé="restauration traditionnelle",
+                      code_proposé="82.99Y",
+                      code_observé="56.21Y") -> dict:
     """Pipeline séquentiel : feedback → agents → rules."""
 
     # 1️⃣ Setup
@@ -40,6 +40,8 @@ def run_extract_rules(libellé="coiffeur ambulant",
     # 🧰 Outillage
     load_and_register_tools(["lookup_codes"], agent_analyse_naf, executor)
     load_and_register_tools(["lookup_codes"], agent_auditeur_naf, executor)
+    load_and_register_tools(["search_naf_concepts"], agent_analyse_naf, executor)
+    load_and_register_tools(["search_naf_concepts"], agent_auditeur_naf, executor)
 
     # 2️⃣ Analyse
 
@@ -54,7 +56,8 @@ Rends-toi strictement dans le format demandé dans ton prompt système.
     res_analyse = run_agent_step(agent=agent_analyse_naf,
                                  executor=executor,
                                  user_prompt=user_prompt_analyse,
-                                 span_name="agent_analyse_naf")
+                                 span_name="agent_analyse_naf",
+                                 max_turns=3)
     res_analyse_text = res_analyse.summary.strip()
 
     # 3️⃣ Audit
@@ -84,7 +87,8 @@ Rends-toi dans le format de ton prompt système.
     res_juge = run_agent_step(agent=agent_juge_naf,
                               executor=executor,
                               user_prompt=user_prompt_juge,
-                              span_name="agent_juge_naf")
+                              span_name="agent_juge_naf",
+                              max_turns=1)
     res_juge_text = res_juge.summary.strip()
 
     res_juge_json = extract_json(res_juge_text)
@@ -95,7 +99,7 @@ Rends-toi dans le format de ton prompt système.
     return res_juge_json
 
 
-def run_extract_rules_batch(chunck_size=50) -> dict:
+def run_extract_rules_batch(chunck_size=25) -> dict:
     """Pipeline séquentiel : feedback → agents → rules."""
 
     # 1️⃣ Setup
@@ -109,6 +113,7 @@ def run_extract_rules_batch(chunck_size=50) -> dict:
     executor = create_agent("executor_agent", human_input_mode="NEVER")
 
     load_and_register_tools(["lookup_codes"], agent_expertise_batch, executor)
+    load_and_register_tools(["search_naf_concepts"], agent_expertise_batch, executor)
     load_and_register_tools(["analyze_impact_cluster"], agent_rules_impact_check, executor)
 
     feedback_data = load_data_to_dict(PATH["INPUT"])
@@ -121,7 +126,8 @@ def run_extract_rules_batch(chunck_size=50) -> dict:
                                        executor=executor,
                                        user_prompt=f"DONNÉES À TRAITER :"
                                                    f"\n{json.dumps(chunk, ensure_ascii=False, indent=2)}\n",
-                                       span_name="agent_expertise_batch")
+                                       span_name="agent_expertise_batch",
+                                       max_turns=3)
         res_expertise_text = res_expertise.summary.strip()
         res_expertise_json = extract_json_list(res_expertise_text)
         res_expertise_json_list += res_expertise_json

@@ -1,10 +1,11 @@
 import re
 import json
 from typing import Annotated, List
+from qdrant_client import models
 from qdrant_client.http.models import Filter, FieldCondition, MatchText
 from ..utils.io import get_qdrant_client, get_duckdb_connection
 from ..utils.data_utils import normalize_ape
-from ..utils.embeddings import get_embedding
+from ..utils.embeddings import get_embedding, engine
 
 
 _CODE_RE = re.compile(r"^\d{2}\.\d{2}[A-Z]$")
@@ -49,15 +50,24 @@ def lookup_codes(codes: Annotated[List[str], "Liste de codes NAF/APE"]) -> str:
 
 def search_naf_concepts(query: str) -> str:
     client = get_qdrant_client()
-
+    results = []
     # On transforme la requête textuelle en vecteur de 1024 dim
     query_vector = get_embedding(query)
-
-    search_result, _ = client.search(
+    points = client.query_points(
         collection_name="labels_embeddings",
-        query_vector=query_vector,
-        limit=5
-    )
+        query=query_vector,                     # Vecteur brut
+        using="OrdalieTech/Solon-embeddings-large-0.1",
+        limit=5).points
+    for p in points:
+        meta = p.payload.get("metadata", {})
+        results.append({
+            "code": meta.get("code"),
+            "label": meta.get("label"),
+            "include": meta.get("include", ""),
+            "not_include": meta.get("not_include", ""),
+            "notes": meta.get("notes", "")
+        })
+    return json.dumps(results, ensure_ascii=False)
 
 
 def analyze_impact_cluster(
