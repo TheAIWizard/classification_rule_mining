@@ -4,13 +4,14 @@ from typing import Annotated, List
 from qdrant_client.http.models import Filter, FieldCondition, MatchText
 from ..utils.io import get_qdrant_client, get_duckdb_connection
 from ..utils.data_utils import normalize_ape
+from ..utils.embeddings import get_embedding
 
 
 _CODE_RE = re.compile(r"^\d{2}\.\d{2}[A-Z]$")
 
 
 def lookup_codes(codes: Annotated[List[str], "Liste de codes NAF/APE"]) -> str:
-    # 1️⃣ Filtrer : on garde uniquement les codes valides, les autres sont ignorés
+    # 1️⃣ Filtrer : on garde uniquement les codes valides, les autres sont ignorés (à paramétriser)
     valid = [c.strip().upper() for c in codes if _CODE_RE.match(c.strip())]
 
     client = get_qdrant_client()
@@ -44,6 +45,19 @@ def lookup_codes(codes: Annotated[List[str], "Liste de codes NAF/APE"]) -> str:
 
     # 3️⃣ Retour JSON strict
     return json.dumps(results, ensure_ascii=False)
+
+
+def search_naf_concepts(query: str) -> str:
+    client = get_qdrant_client()
+
+    # On transforme la requête textuelle en vecteur de 1024 dim
+    query_vector = get_embedding(query)
+
+    search_result, _ = client.search(
+        collection_name="labels_embeddings",
+        query_vector=query_vector,
+        limit=5
+    )
 
 
 def analyze_impact_cluster(

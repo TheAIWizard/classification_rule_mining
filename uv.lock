@@ -507,6 +507,7 @@ dependencies = [
     { name = "qdrant-client" },
     { name = "s3fs" },
     { name = "sentence-transformers" },
+    { name = "torch" },
 ]
 
 [package.metadata]
@@ -518,6 +519,7 @@ requires-dist = [
     { name = "qdrant-client", specifier = ">=1.17.1" },
     { name = "s3fs", specifier = ">=2026.4.0" },
     { name = "sentence-transformers", specifier = ">=5.4.1" },
+    { name = "torch", specifier = ">=2.11.0" },
 ]
 
 [[package]]

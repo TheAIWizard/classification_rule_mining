@@ -64,7 +64,6 @@ def get_duckdb_connection():
     return con
 
 
-
 # --- CHARGEMENT ET TRANSFORMATION ---
 def load_data_to_dict(path: str, file_type: str = "csv") -> List[Dict]:
     """
