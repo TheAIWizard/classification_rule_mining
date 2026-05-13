@@ -99,7 +99,7 @@ Rends-toi dans le format de ton prompt système.
     return res_juge_json
 
 
-def run_extract_rules_batch(chunck_size=25) -> dict:
+def run_extract_rules_batch(chunck_size=4) -> dict:
     """Pipeline séquentiel : feedback → agents → rules."""
 
     # 1️⃣ Setup
@@ -121,52 +121,123 @@ def run_extract_rules_batch(chunck_size=25) -> dict:
 
     res_expertise_json_list = []
 
-    for chunk in feedback_data_list:
-        res_expertise = run_agent_step(agent=agent_expertise_batch,
-                                       executor=executor,
-                                       user_prompt=f"DONNÉES À TRAITER :"
-                                                   f"\n{json.dumps(chunk, ensure_ascii=False, indent=2)}\n",
-                                       span_name="agent_expertise_batch",
-                                       max_turns=3)
-        res_expertise_text = res_expertise.summary.strip()
-        res_expertise_json = extract_json_list(res_expertise_text)
-        res_expertise_json_list += res_expertise_json
-    save_json(res_expertise_json, f"{PATH['OUTPUT']}/expertise")
-    save_results(res_expertise_json_list, PATH["OUTPUT"])
+    # for chunk in feedback_data_list:
 
-    res_clusters_json_list = []
+    #     max_batch_retries = 2
+    #     batch_retry_count = 0
 
-    chuncked_res_expertise_json_list = chunk_list(res_expertise_json_list, chunk_size=chunck_size)
-    for chunk in chuncked_res_expertise_json_list:
-        res_clusters = run_agent_step(agent=agent_clusterer_batch,
-                                      executor=executor,
-                                      user_prompt=f"DONNÉES À TRAITER :"
-                                                  f"\n{json.dumps(chunk, ensure_ascii=False, indent=2)}\n",
-                                      span_name="agent_clusterer_batch")
-        res_clusters_text = res_clusters.summary.strip()
-        res_clusters_json = extract_json_list(res_clusters_text)
-        res_clusters_json_list += res_clusters_json
-    save_json(res_clusters_json, f"{PATH['OUTPUT']}/clusters")
-    save_results(res_clusters_json_list, PATH["OUTPUT"])
+    #     while batch_retry_count <= max_batch_retries:
+
+    #         res_expertise = run_agent_step(
+    #             agent=agent_expertise_batch,
+    #             executor=executor,
+    #             user_prompt=f"DONNÉES À TRAITER :"
+    #                         f"\n{json.dumps(chunk, ensure_ascii=False, indent=2)}\n",
+    #             span_name="agent_expertise_batch",
+    #             max_turns=14
+    #         )
+
+    #         with langfuse.start_as_current_observation(
+    #             as_type="span",
+    #             name="res_expertise_agent_parse"
+    #         ) as span:
+
+    #             res_expertise_text = res_expertise.summary.strip()
+
+    #             try:
+    #                 res_expertise_json = extract_json_list(res_expertise_text)
+    #             except Exception:
+    #                 res_expertise_json = []
+
+    #             span.update(
+    #                 name="expertise_agent_parser",
+    #                 input={
+    #                     "raw_output": res_expertise_text
+    #                 },
+    #                 output={
+    #                     "parsed_json": res_expertise_json,
+    #                     "batch_retry_count": batch_retry_count,
+    #                     "max_batch_retries": max_batch_retries,
+    #                     "had_retry": batch_retry_count > 0
+    #                 }
+    #             )
+
+    #             # ✅ Sortie valide → sortie de boucle
+    #             if isinstance(res_expertise_json, list) and len(res_expertise_json) > 0:
+    #                 break
+
+    #         batch_retry_count += 1
+
+    #     res_expertise_json_list += res_expertise_json
+
+    # save_json(res_expertise_json_list, f"{PATH['OUTPUT']}/expertise")
+    # save_results(res_expertise_json_list, PATH["OUTPUT"])
+
+    # res_expertise_json_list = load_json('/home/onyxia/work/classification_rule_mining/expertise_20260512_202048.json')
+
+    # res_clusters_json_list = []
+
+    # chuncked_res_expertise_json_list = chunk_list(res_expertise_json_list, chunk_size=150)
+    # for chunk in chuncked_res_expertise_json_list:
+    #     max_batch_retries = 2
+    #     batch_retry_count = 0
+
+    #     while batch_retry_count <= max_batch_retries:
+    #         res_clusters = run_agent_step(agent=agent_clusterer_batch,
+    #                                       executor=executor,
+    #                                       user_prompt=f"DONNÉES À TRAITER :"
+    #                                                   f"\n{json.dumps(chunk, ensure_ascii=False, indent=2)}\n",
+    #                                       span_name="agent_clusterer_batch")
+    #         with langfuse.start_as_current_observation(
+    #             as_type="span",
+    #             name="res_clusters_agent_parse"
+    #         ) as span:
+    #             res_clusters_text = res_clusters.summary.strip()
+    #             try:
+    #                 res_clusters_json = extract_json_list(res_clusters_text)
+    #             except Exception:
+    #                 res_clusters_json = []
+    #             span.update(
+    #                 name="agent_clusterer_parser",
+    #                 input={
+    #                     "raw_output": res_clusters_text
+    #                 },
+    #                 output={
+    #                     "parsed_json": res_clusters_json,
+    #                     "batch_retry_count": batch_retry_count,
+    #                     "max_batch_retries": max_batch_retries,
+    #                     "had_retry": batch_retry_count > 0
+    #                 }
+    #             )
+    #             # ✅ Sortie valide → sortie de boucle
+    #             if isinstance(res_clusters_json, list) and len(res_clusters_json) > 0:
+    #                 break
+    #         batch_retry_count += 1
+    #     res_clusters_json_list += res_clusters_json
+    # save_json(res_clusters_json, f"{PATH['OUTPUT']}/clusters")
+    # save_results(res_clusters_json_list, PATH["OUTPUT"])
+
+    res_clusters_json_list = load_json('/home/onyxia/work/classification_rule_mining/clusters_20260512_220253.json')
 
     res_clusters_merger = run_agent_step(agent=agent_clusters_merger,
                                          executor=executor,
                                          user_prompt=f"DONNÉES À TRAITER :"
                                                      f"\n{json.dumps(res_clusters_json_list)}\n",
-                                         span_name="agent_clusters_merger")
+                                         span_name="agent_clusters_merger",
+                                         max_turns=1)
     res_clusters_merger_text = res_clusters_merger.summary.strip()
     res_clusters_merger_json = extract_json_list(res_clusters_merger_text)
     save_json(res_clusters_merger_json, f"{PATH['OUTPUT']}/clusters_merge")
     # save_results(res_clusters_merger, PATH["OUTPUT"])
 
-    # res_clusters_merge_text = load_json('/home/onyxia/work/classification_rule_mining/outputs/clusters_merge_20260508_174043_sans_notes.json')
     s3_path = 's3://projet-ape/data/08112022_27102024/naf2025/raw_cleansed.parquet'
     res_rules_impact_check = run_agent_step(agent=agent_rules_impact_check,
                                             executor=executor,
                                             user_prompt=f"DONNÉES À TRAITER :"
-                                                        f"\n{json.dumps(res_clusters_merger_text)}\n"
+                                                        f"\n{json.dumps(res_clusters_merger_json)}\n"
                                                         f"s3_path={s3_path}, column=libelle_cleaned",
-                                            span_name="agent_rules_impact_check")
+                                            span_name="agent_rules_impact_check",
+                                            max_turns=4)
     res_rules_impact_check_text = res_rules_impact_check.summary.strip()
     res_rules_impact_check_json = extract_json_list(res_rules_impact_check_text)
     save_json(res_rules_impact_check_json, f"{PATH['OUTPUT']}/rules_impact")
@@ -178,3 +249,5 @@ def run_extract_rules_batch(chunck_size=25) -> dict:
                                            span_name="agent_rules_renderer_md")
     res_rules_renderer_md_text = res_rules_renderer_md.summary.strip()
     save_md(res_rules_renderer_md_text, PATH["OUTPUT"])
+
+    langfuse.flush()

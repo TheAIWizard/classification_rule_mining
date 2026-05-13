@@ -20,9 +20,9 @@ AGENT_MODEL_MAP = {
     "agent_auditeur_naf":       LLM_GEMMA4_26B,
     "agent_juge_naf":       LLM_GEMMA4_26B,
     "agent_expertise_batch":       LLM_GEMMA4_26B,
-    "agent_clusterer_batch":       LLM_GEMMA4_26B,
+    "agent_clusterer_batch":       LLM_QWEN3_6_35B,
     "agent_clusters_merger":       LLM_GEMMA4_26B,
-    "agent_rules_impact_check":       LLM_GEMMA4_26B,
+    "agent_rules_impact_check":       LLM_QWEN3_6_35B,
     "agent_rules_renderer_md":       LLM_GEMMA4_26B,
 }
 
